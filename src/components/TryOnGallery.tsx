@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Heart, Trash2, ChevronLeft, ChevronRight, Sparkles, User, X } from 'lucide-react';
+import { Play, Heart, Trash2, ChevronLeft, ChevronRight, Sparkles, User, X, ZoomIn } from 'lucide-react';
 import { TryOnResult, UserPhoto } from '../types';
 import PhotoCapture from './PhotoCapture';
+import ImageGalleryModal from './ImageGalleryModal';
 
 interface TryOnGalleryProps {
   userPhoto: UserPhoto | null;
@@ -24,6 +25,8 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
   onTryOnAction
 }) => {
   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to show latest items while keeping first item accessible
@@ -72,6 +75,49 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
       setActiveVideo(resultId);
       onTryOnAction(resultId, 'motion');
     }
+  };
+
+  // Modal handlers
+  const openGalleryModal = (imageIndex: number) => {
+    setSelectedImageIndex(imageIndex);
+    setIsGalleryModalOpen(true);
+  };
+
+  const closeGalleryModal = () => {
+    setIsGalleryModalOpen(false);
+  };
+
+  // Clickable Image Component
+  const ClickableImage: React.FC<{
+    src: string;
+    alt: string;
+    className?: string;
+    onClick?: () => void;
+    showZoomIcon?: boolean;
+  }> = ({ src, alt, className = '', onClick, showZoomIcon = true }) => {
+    return (
+      <div className="relative group h-full cursor-pointer" onClick={onClick}>
+        <img
+          src={src}
+          alt={alt}
+          className={className}
+        />
+        
+        {/* Zoom Hint Overlay */}
+        {showZoomIcon && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileHover={{ opacity: 1 }}
+            className="absolute inset-0 bg-black/20 flex items-center justify-center 
+                       opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          >
+            <div className="bg-black/60 backdrop-blur-sm rounded-full p-2">
+              <ZoomIn className="w-6 h-6 text-white" />
+            </div>
+          </motion.div>
+        )}
+      </div>
+    );
   };
 
   const scrollLeft = () => {
@@ -135,27 +181,36 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
             className="text-center max-w-sm"
           >
             <div className="relative inline-block mb-6">
-              <img
-                src={userPhoto.imageUrl}
-                alt="Your photo"
-                className="w-48 h-60 object-cover rounded-lg shadow-lg border-4 border-white"
-              />
-              <div className="absolute -top-2 -right-2">
-                <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 
-                               rounded-full flex items-center justify-center shadow-lg">
-                  <User className="w-4 h-4 text-white" />
+              <div className="relative">
+                <ClickableImage
+                  src={userPhoto.imageUrl}
+                  alt="Your photo"
+                  className="w-48 h-60 object-cover rounded-lg shadow-lg border-4 border-white"
+                  onClick={() => {
+                    // For user photo, we can show it in modal too if there are try-on results
+                    if (tryOnResults.length > 0) {
+                      openGalleryModal(0); // Start from first try-on result
+                    }
+                  }}
+                  showZoomIcon={tryOnResults.length > 0} // Only show zoom if there are results
+                />
+                <div className="absolute -top-2 -right-2 z-10">
+                  <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 
+                                 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                    <User className="w-4 h-4 text-white" />
+                  </div>
                 </div>
+                {/* Remove Photo Button */}
+                <button
+                  onClick={onPhotoRemove}
+                  className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 hover:bg-red-600 
+                             rounded-full flex items-center justify-center shadow-lg 
+                             transition-colors group z-20"
+                  title="Remove photo"
+                >
+                  <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+                </button>
               </div>
-              {/* Remove Photo Button */}
-              <button
-                onClick={onPhotoRemove}
-                className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 hover:bg-red-600 
-                           rounded-full flex items-center justify-center shadow-lg 
-                           transition-colors group"
-                title="Remove photo"
-              >
-                <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-              </button>
             </div>
             
             <motion.div
@@ -252,11 +307,16 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
                     {result.isProcessing ? (
                       // Loading state with original try-on image
                       <div className="relative h-full">
-                        {/* Background try-on image */}
-                        <img
+                        {/* Background try-on image with modal capability */}
+                        <ClickableImage
                           src={result.imageUrl}
                           alt={result.outfit.title}
                           className="w-full h-full object-cover"
+                          onClick={() => {
+                            const imageIndex = tryOnResults.findIndex(r => r.id === result.id);
+                            openGalleryModal(imageIndex);
+                          }}
+                          showZoomIcon={false} // Don't show icon during processing
                         />
                         
                         {/* Loading overlay */}
@@ -285,11 +345,15 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
                         className="w-full h-full object-cover"
                       />
                     ) : (
-                      // Static image
-                      <img
+                      // Static image with modal capability
+                      <ClickableImage
                         src={result.imageUrl}
                         alt={`Try-on: ${result.outfit.title}`}
                         className="w-full h-full object-cover"
+                        onClick={() => {
+                          const imageIndex = tryOnResults.findIndex(r => r.id === result.id);
+                          openGalleryModal(imageIndex);
+                        }}
                       />
                     )}
 
@@ -409,6 +473,17 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Image Gallery Modal */}
+      <ImageGalleryModal
+        isOpen={isGalleryModalOpen}
+        images={tryOnResults}
+        initialIndex={selectedImageIndex}
+        onClose={closeGalleryModal}
+        onTryOnAction={onTryOnAction}
+        activeVideo={activeVideo}
+        onVideoToggle={handleVideoToggle}
+      />
     </div>
   );
 };

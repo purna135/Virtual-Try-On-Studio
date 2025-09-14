@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ShoppingBag, Heart, Trash2, CreditCard } from 'lucide-react';
+import { X, ShoppingBag, Heart, Trash2, CreditCard, ZoomIn } from 'lucide-react';
 import { CartItem } from '../types';
 
 interface CartProps {
@@ -27,6 +27,53 @@ const Cart: React.FC<CartProps> = ({
     if (e.target === e.currentTarget) {
       onClose();
     }
+  };
+
+  // Modal state for image viewing
+  const [selectedImage, setSelectedImage] = useState<{ src: string; alt: string; item: CartItem } | null>(null);
+
+  // Close modal with ESC key
+  useEffect(() => {
+    if (!selectedImage) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setSelectedImage(null);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [selectedImage]);
+
+  // Simple Modal Image Component for Cart
+  const ModalImage: React.FC<{
+    src: string;
+    alt: string;
+    className?: string;
+    cartItem: CartItem;
+  }> = ({ src, alt, className = '', cartItem }) => {
+    const handleImageClick = (e: React.MouseEvent) => {
+      e.stopPropagation(); // Prevent cart interactions
+      setSelectedImage({ src, alt, item: cartItem });
+    };
+
+    return (
+      <div className="relative group cursor-pointer" onClick={handleImageClick}>
+        <img
+          src={src}
+          alt={alt}
+          className={className}
+        />
+        
+        {/* Zoom Hint */}
+        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 
+                        transition-colors duration-200 flex items-center justify-center">
+          <ZoomIn className="w-3 h-3 text-white opacity-0 group-hover:opacity-100 
+                            transition-opacity duration-200 bg-black/60 rounded-full p-0.5" />
+        </div>
+      </div>
+    );
   };
 
   if (!isOpen) return null;
@@ -101,12 +148,13 @@ const Cart: React.FC<CartProps> = ({
                     className="bg-white border border-neutral-200 rounded-lg p-4 shadow-sm hover:shadow-md transition-all"
                   >
                     <div className="flex space-x-3">
-                      {/* Try-on Image */}
+                      {/* Try-on Image with Modal */}
                       <div className="flex-shrink-0">
-                        <img
+                        <ModalImage
                           src={item.tryOnResult.imageUrl}
                           alt={item.tryOnResult.outfit.title}
                           className="w-16 h-20 object-cover rounded-lg border border-neutral-200"
+                          cartItem={item}
                         />
                       </div>
 
@@ -178,6 +226,78 @@ const Cart: React.FC<CartProps> = ({
             </div>
           )}
         </motion.div>
+
+        {/* Image Modal */}
+        {selectedImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4"
+            onClick={() => setSelectedImage(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="relative max-w-2xl max-h-[90vh] bg-white rounded-lg overflow-hidden shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedImage(null)}
+                className="absolute top-4 right-4 z-10 p-2 bg-white/10 hover:bg-white/20 
+                           rounded-full text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+
+              {/* Image */}
+              <div className="relative">
+                <img
+                  src={selectedImage.src}
+                  alt={selectedImage.alt}
+                  className="w-full max-h-[70vh] object-contain"
+                />
+                
+                {/* Selected indicator */}
+                {selectedImage.item.tryOnResult.isSelected && (
+                  <div className="absolute top-4 left-4">
+                    <div className="w-8 h-8 bg-accent-500 rounded-full flex items-center justify-center 
+                                    shadow-lg border-2 border-white">
+                      <Heart className="w-4 h-4 text-white fill-current" />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Image Info */}
+              <div className="p-4 bg-white">
+                <div className="flex items-center justify-between">
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-neutral-900 mb-1">
+                      {selectedImage.item.tryOnResult.outfit.title}
+                    </h3>
+                    <p className="text-sm text-neutral-600">
+                      {selectedImage.item.tryOnResult.outfit.brand}
+                    </p>
+                    {selectedImage.item.tryOnResult.outfit.price && (
+                      <p className="text-lg font-semibold text-primary-600 mt-2">
+                        ${selectedImage.item.tryOnResult.outfit.price.toFixed(2)}
+                      </p>
+                    )}
+                  </div>
+                  
+                  <div className="text-xs text-neutral-500 bg-accent-100 text-accent-700 
+                                  px-2 py-1 rounded-full">
+                    <Heart className="w-3 h-3 mr-1 inline fill-current" />
+                    In Cart
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
       </div>
     </AnimatePresence>
   );

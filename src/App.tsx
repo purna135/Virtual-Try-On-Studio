@@ -1,11 +1,11 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Upload, ShoppingBag } from 'lucide-react';
+import { Camera, Upload, ShoppingBag, Bot, Image } from 'lucide-react';
 import { AppState, Filter, TryOnResult, UserPhoto, Outfit, CartItem } from './types';
-import { mockOutfits, mockTryOnImages, mockTryOnVideos } from './data/mockData';
+import { mockOutfits, mockTryOnVideos, mockTryOnImages } from './data/mockData';
+import { generateTryOnImage, SeedreamApiError, convertToApiBase64Format } from './services/seedreamApi';
 import TryOnGallery from './components/TryOnGallery';
 import OutfitCatalog from './components/OutfitCatalog';
-import PhotoCapture from './components/PhotoCapture';
 import Cart from './components/Cart';
 
 const initialFilter: Filter = {
@@ -30,6 +30,13 @@ function App() {
   });
   
   const [showCart, setShowCart] = useState(false);
+  
+  // Toggle between mock and real API mode
+  const [useMockMode, setUseMockMode] = useState(() => {
+    // Check environment variable for default mode, fallback to true for development
+    const envDefault = import.meta.env.VITE_DEFAULT_MOCK_MODE;
+    return envDefault ? envDefault.toLowerCase() === 'true' : true;
+  });
 
   // Handle user photo upload/capture
   const handlePhotoCapture = useCallback((photo: UserPhoto) => {
@@ -50,9 +57,10 @@ function App() {
   }, []);
 
   // Handle outfit selection for try-on
-  const handleOutfitSelect = useCallback((outfit: Outfit) => {
+  const handleOutfitSelect = useCallback(async (outfit: Outfit) => {
     if (!appState.userPhoto) {
       // TODO: Show toast to capture photo first
+      alert('Please upload or capture your photo first to try on outfits');
       return;
     }
 
@@ -63,14 +71,39 @@ function App() {
       isLoading: true
     }));
 
-    // Simulate try-on processing
-    setTimeout(() => {
+    try {
+      let tryOnImageUrl: string;
+
+      if (useMockMode) {
+        // Use mock data for testing
+        console.log('🎭 Using mock mode - generating try-on with mock images');
+        
+        // Simulate API delay for realistic testing
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Use mock try-on image or fallback to outfit image
+        tryOnImageUrl = mockTryOnImages[outfit.id] || outfit.imageUrl;
+        
+      } else {
+        // Use real AI API
+        console.log('🚀 Using real AI mode - generating try-on with SeedREAM API');
+        
+        // Convert user photo to correct Base64 format for API
+        const personImageBase64 = convertToApiBase64Format(appState.userPhoto.imageUrl);
+        
+        // Generate try-on image using SeedREAM API
+        tryOnImageUrl = await generateTryOnImage({
+          personImageBase64,
+          outfitImageUrl: outfit.imageUrl
+        });
+      }
+
       const newTryOn: TryOnResult = {
         id: `tryon-${Date.now()}`,
         outfitId: outfit.id,
         outfit,
-        imageUrl: mockTryOnImages[outfit.id] || outfit.imageUrl,
-        videoUrl: mockTryOnVideos[outfit.id],
+        imageUrl: tryOnImageUrl,
+        videoUrl: mockTryOnVideos[outfit.id], // Keep mock video for now
         isSelected: false,
         isProcessing: false,
         createdAt: new Date()
@@ -82,8 +115,30 @@ function App() {
         isLoading: false,
         selectedOutfitId: null
       }));
-    }, 2500);
-  }, [appState.userPhoto]);
+
+    } catch (error) {
+      console.error('Try-on generation failed:', error);
+      
+      // Handle different types of errors
+      let errorMessage = 'Failed to generate try-on image. Please try again.';
+      
+      if (!useMockMode && error instanceof SeedreamApiError) {
+        errorMessage = `AI Try-on Error: ${error.message}`;
+      } else if (error instanceof Error) {
+        errorMessage = `Error: ${error.message}`;
+      }
+      
+      // Show error to user
+      alert(errorMessage);
+      
+      // Reset loading state
+      setAppState(prev => ({
+        ...prev,
+        isLoading: false,
+        selectedOutfitId: null
+      }));
+    }
+  }, [appState.userPhoto, useMockMode]);
 
   // Handle filter changes
   const handleFilterChange = useCallback((filter: Filter) => {
@@ -247,7 +302,35 @@ function App() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-6">
+          <div className="flex items-center space-x-4">
+            {/* Mock/AI Mode Toggle */}
+            <div className="flex items-center space-x-2">
+              <div className="text-xs text-neutral-600 hidden sm:block">
+                {useMockMode ? 'Mock Mode' : 'AI Mode'}
+              </div>
+              <button
+                onClick={() => setUseMockMode(!useMockMode)}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent 
+                           transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2 ${
+                  useMockMode ? 'bg-neutral-400' : 'bg-primary-600'
+                }`}
+                title={useMockMode ? 'Switch to AI Mode' : 'Switch to Mock Mode'}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 
+                             transition duration-200 ease-in-out ${
+                    useMockMode ? 'translate-x-0' : 'translate-x-5'
+                  }`}
+                >
+                  {useMockMode ? (
+                    <Image className="w-3 h-3 text-neutral-600 mt-1 ml-1" />
+                  ) : (
+                    <Bot className="w-3 h-3 text-primary-600 mt-1 ml-1" />
+                  )}
+                </span>
+              </button>
+            </div>
+
             {/* Cart Indicator */}
             {appState.cartItems.length > 0 && (
               <button
