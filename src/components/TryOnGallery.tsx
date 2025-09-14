@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { Play, Heart, Trash2, ChevronLeft, ChevronRight, Sparkles, User, X, ZoomIn } from 'lucide-react';
+  import React, { useState, useRef, useEffect } from 'react';
+  import { motion, AnimatePresence } from 'framer-motion';
+  import { Play, Heart, Trash2, ChevronLeft, ChevronRight, User, X, ZoomIn } from 'lucide-react';
 import { TryOnResult, UserPhoto } from '../types';
 import PhotoCapture from './PhotoCapture';
 import ImageGalleryModal from './ImageGalleryModal';
@@ -121,14 +121,14 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
   };
 
   const scrollLeft = () => {
-    const cardWidth = 240; // Width of each try-on card (w-60 = 240px)
+    const cardWidth = 384; // Width of each try-on card (w-96 = 384px)
     const gap = 16; // space-x-4 = 16px
     const scrollDistance = cardWidth + gap;
     scrollRef.current?.scrollBy({ left: -scrollDistance, behavior: 'smooth' });
   };
 
   const scrollRight = () => {
-    const cardWidth = 240; // Width of each try-on card (w-60 = 240px)
+    const cardWidth = 384; // Width of each try-on card (w-96 = 384px)
     const gap = 16; // space-x-4 = 16px
     const scrollDistance = cardWidth + gap;
     scrollRef.current?.scrollBy({ left: scrollDistance, behavior: 'smooth' });
@@ -137,18 +137,8 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
   // Show photo capture if no user photo
   if (!userPhoto) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="p-6 border-b border-neutral-200">
-          <h2 className="text-xl font-display font-semibold text-neutral-900">
-            Try-On Gallery
-          </h2>
-          <p className="text-neutral-600 text-sm">
-            Upload your photo to start trying on outfits
-          </p>
-        </div>
-        <div className="flex-1">
-          <PhotoCapture onPhotoCapture={onPhotoCapture} />
-        </div>
+      <div className="h-full">
+        <PhotoCapture onPhotoCapture={onPhotoCapture} />
       </div>
     );
   }
@@ -156,25 +146,7 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
   // Show placeholder with user photo if no try-ons yet
   if (tryOnResults.length === 0 && !isLoading) {
     return (
-      <div className="h-full flex flex-col">
-        <div className="p-4 border-b border-neutral-200">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-display font-semibold text-neutral-900">
-                Try-On Gallery
-              </h2>
-              <p className="text-neutral-600 text-sm">
-                Select outfits to see how they look on you
-              </p>
-            </div>
-            <div className="flex items-center text-secondary-600">
-              <Sparkles className="w-4 h-4 mr-2" />
-              <span className="text-xs font-medium">Ready to try on!</span>
-            </div>
-          </div>
-        </div>
-        
-        <div className="flex-1 flex items-center justify-center p-6">
+      <div className="h-full flex items-center justify-center p-6">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -234,29 +206,14 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
               </motion.div>
             </motion.div>
           </motion.div>
-        </div>
       </div>
     );
   }
 
   return (
-    <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex-shrink-0 p-4 border-b border-neutral-200">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-lg font-display font-semibold text-neutral-900">
-              Try-On Gallery
-            </h2>
-            <p className="text-neutral-600 text-sm">
-              {tryOnResults.length} outfit{tryOnResults.length !== 1 ? 's' : ''} tried on
-            </p>
-          </div>
-        </div>
-      </div>
-
+    <div className="h-full">
       {/* Try-On Results Carousel */}
-      <div className="flex-1 relative">
+      <div className="h-full relative">
         {/* Navigation Arrows */}
         {tryOnResults.length > 2 && (
           <>
@@ -293,7 +250,7 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
                   initial={{ opacity: 0, scale: 0.9, x: 20 }}
                   animate={{ opacity: 1, scale: 1, x: 0 }}
                   exit={{ opacity: 0, scale: 0.9, x: -20 }}
-                  className="flex-shrink-0 w-60 h-80"
+                  className="flex-shrink-0 w-96 h-[28rem]"
                   style={{ scrollSnapAlign: 'center' }}
                 >
                 <div className={`relative h-full rounded-lg overflow-hidden shadow-md border-2 transition-all duration-300 ${
@@ -438,7 +395,7 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
               <motion.div
                 initial={{ opacity: 0, scale: 0.9, x: 20 }}
                 animate={{ opacity: 1, scale: 1, x: 0 }}
-                className="flex-shrink-0 w-60 h-80"
+                className="flex-shrink-0 w-96 h-[28rem]"
                 style={{ scrollSnapAlign: 'center' }}
               >
                 <div className="h-full rounded-lg overflow-hidden shadow-md border-2 border-primary-200 relative">

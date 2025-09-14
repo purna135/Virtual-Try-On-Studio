@@ -331,6 +331,14 @@ function App() {
               </button>
             </div>
 
+            {/* Try-On Count */}
+            {appState.tryOnResults.length > 0 && (
+              <div className="text-xs text-neutral-600 hidden sm:block">
+                <span className="font-medium">{appState.tryOnResults.length}</span>{' '}
+                outfit{appState.tryOnResults.length !== 1 ? 's' : ''} tried on
+              </div>
+            )}
+
             {/* Cart Indicator */}
             {appState.cartItems.length > 0 && (
               <button
