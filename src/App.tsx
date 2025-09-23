@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Camera, Upload, ShoppingBag, Bot, Image } from 'lucide-react';
+import { Camera, ShoppingBag, Bot, Image } from 'lucide-react';
 import { AppState, Filter, TryOnResult, UserPhoto, Outfit, CartItem } from './types';
 import { mockOutfits, mockTryOnVideos, mockTryOnImages } from './data/mockData';
 import { generateTryOnImage, SeedreamApiError, convertToApiBase64Format } from './services/seedreamApi';
@@ -38,6 +38,17 @@ function App() {
     return envDefault ? envDefault.toLowerCase() === 'true' : true;
   });
 
+  // Clear try-on results when switching modes
+  useEffect(() => {
+    setAppState(prev => ({
+      ...prev,
+      tryOnResults: [],
+      cartItems: [],
+      selectedOutfitId: null,
+      isLoading: false
+    }));
+  }, [useMockMode]);
+
   // Handle user photo upload/capture
   const handlePhotoCapture = useCallback((photo: UserPhoto) => {
     setAppState(prev => ({
@@ -58,7 +69,8 @@ function App() {
 
   // Handle outfit selection for try-on
   const handleOutfitSelect = useCallback(async (outfit: Outfit) => {
-    if (!appState.userPhoto) {
+    // In AI Mode, require user photo
+    if (!useMockMode && !appState.userPhoto) {
       // TODO: Show toast to capture photo first
       alert('Please upload or capture your photo first to try on outfits');
       return;
@@ -89,7 +101,7 @@ function App() {
         console.log('🚀 Using real AI mode - generating try-on with SeedREAM API');
         
         // Convert user photo to correct Base64 format for API
-        const personImageBase64 = convertToApiBase64Format(appState.userPhoto.imageUrl);
+        const personImageBase64 = convertToApiBase64Format(appState.userPhoto!.imageUrl);
         
         // Generate try-on image using SeedREAM API
         tryOnImageUrl = await generateTryOnImage({
@@ -353,15 +365,6 @@ function App() {
               </button>
             )}
 
-            {!appState.userPhoto && (
-              <div className="hidden sm:block text-right">
-                <p className="text-sm text-neutral-600 mb-1">Get Started</p>
-                <div className="flex items-center space-x-2 text-primary-600">
-                  <Upload className="w-4 h-4" />
-                  <span className="text-sm font-medium">Upload your photo</span>
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </motion.header>
@@ -382,6 +385,7 @@ function App() {
               tryOnResults={appState.tryOnResults}
               isLoading={appState.isLoading}
               selectedOutfitId={appState.selectedOutfitId}
+              useMockMode={useMockMode}
               onPhotoCapture={handlePhotoCapture}
               onPhotoRemove={handlePhotoRemove}
               onTryOnAction={handleTryOnAction}
