@@ -314,7 +314,7 @@ const OutfitCatalog: React.FC<OutfitCatalogProps> = ({
                       {/* Outfit Image */}
                       <div className="relative h-48 overflow-hidden">
                         <img
-                          src={outfit.imageUrl}
+                          src={outfit.thumbnailUrl[0]}
                           alt={outfit.title}
                           className="w-full h-full object-cover transition-transform duration-300 
                                      group-hover:scale-105"
