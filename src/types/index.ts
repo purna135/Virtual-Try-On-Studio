@@ -6,7 +6,7 @@ export interface Outfit {
   category: OutfitCategory;
   gender: Gender;
   imageUrl: string;
-  thumbnailUrl: string;
+  thumbnailUrl: string[]; // Array of 4 preview URLs before generation
   description?: string;
   price?: number;
   brand?: string;

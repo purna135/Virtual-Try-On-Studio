@@ -64,6 +64,31 @@ function App() {
       return;
     }
 
+    // In Mock Mode, show preview images instead of generating
+    if (useMockMode) {
+      console.log('🎭 Mock Mode: Showing preview images for outfit:', outfit.title);
+      
+      // Create preview try-on results using thumbnailUrl images
+      const previewResults: TryOnResult[] = outfit.thumbnailUrl.map((thumbnailUrl, index) => ({
+        id: `preview-${outfit.id}-${index}`,
+        outfitId: outfit.id,
+        outfit: outfit,
+        imageUrl: thumbnailUrl, // Use thumbnailUrl as preview image
+        isSelected: index === 0, // Select first preview by default
+        isProcessing: false,
+        createdAt: new Date()
+      }));
+
+      setAppState(prev => ({
+        ...prev,
+        tryOnResults: previewResults,
+        selectedOutfitId: outfit.id,
+        isLoading: false
+      }));
+      
+      return;
+    }
+
     // Set loading state without adding the result yet
     setAppState(prev => ({
       ...prev,
@@ -92,9 +117,11 @@ function App() {
         const personImageBase64 = convertToApiBase64Format(appState.userPhoto.imageUrl);
         
         // Generate try-on image using SeedREAM API
+        // Use the first thumbnailUrl as the outfit image for generation
+        const outfitImageForGeneration = outfit.thumbnailUrl[0] || outfit.imageUrl;
         tryOnImageUrl = await generateTryOnImage({
           personImageBase64,
-          outfitImageUrl: outfit.imageUrl
+          outfitImageUrl: outfitImageForGeneration
         });
       }
 
