@@ -10,6 +10,7 @@ interface TryOnGalleryProps {
   tryOnResults: TryOnResult[];
   isLoading: boolean;
   selectedOutfitId: string | null;
+  useMockMode: boolean;
   onPhotoCapture: (photo: UserPhoto) => void;
   onPhotoRemove: () => void;
   onTryOnAction: (id: string, action: 'select' | 'delete' | 'motion') => void;
@@ -20,6 +21,7 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
   tryOnResults,
   isLoading,
   selectedOutfitId,
+  useMockMode,
   onPhotoCapture,
   onPhotoRemove,
   onTryOnAction
@@ -134,8 +136,8 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
     scrollRef.current?.scrollBy({ left: scrollDistance, behavior: 'smooth' });
   };
 
-  // Show photo capture if no user photo
-  if (!userPhoto) {
+  // Show photo capture if no user photo AND not in mock mode
+  if (!userPhoto && !useMockMode) {
     return (
       <div className="h-full">
         <PhotoCapture onPhotoCapture={onPhotoCapture} />
@@ -143,7 +145,7 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
     );
   }
 
-  // Show placeholder with user photo if no try-ons yet
+  // Show placeholder if no try-ons yet
   if (tryOnResults.length === 0 && !isLoading) {
     return (
       <div className="h-full flex items-center justify-center p-6">
@@ -152,59 +154,103 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             className="text-center max-w-sm"
           >
-            <div className="relative inline-block mb-6">
-              <div className="relative">
-                <ClickableImage
-                  src={userPhoto.imageUrl}
-                  alt="Your photo"
-                  className="w-48 h-60 object-cover rounded-lg shadow-lg border-4 border-white"
-                  onClick={() => {
-                    // For user photo, we can show it in modal too if there are try-on results
-                    if (tryOnResults.length > 0) {
-                      openGalleryModal(0); // Start from first try-on result
-                    }
-                  }}
-                  showZoomIcon={tryOnResults.length > 0} // Only show zoom if there are results
-                />
-                <div className="absolute -top-2 -right-2 z-10">
-                  <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 
-                                 rounded-full flex items-center justify-center shadow-lg border-2 border-white">
-                    <User className="w-4 h-4 text-white" />
+            {userPhoto ? (
+              <>
+                <div className="relative inline-block mb-6">
+                  <div className="relative">
+                    <ClickableImage
+                      src={userPhoto.imageUrl}
+                      alt="Your photo"
+                      className="w-48 h-60 object-cover rounded-lg shadow-lg border-4 border-white"
+                      onClick={() => {
+                        // For user photo, we can show it in modal too if there are try-on results
+                        if (tryOnResults.length > 0) {
+                          openGalleryModal(0); // Start from first try-on result
+                        }
+                      }}
+                      showZoomIcon={tryOnResults.length > 0} // Only show zoom if there are results
+                    />
+                    <div className="absolute -top-2 -right-2 z-10">
+                      <div className="w-8 h-8 bg-gradient-to-r from-primary-500 to-secondary-500 
+                                     rounded-full flex items-center justify-center shadow-lg border-2 border-white">
+                        <User className="w-4 h-4 text-white" />
+                      </div>
+                    </div>
+                    {/* Remove Photo Button */}
+                    <button
+                      onClick={onPhotoRemove}
+                      className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 hover:bg-red-600 
+                                 rounded-full flex items-center justify-center shadow-lg 
+                                 transition-colors group z-20"
+                      title="Remove photo"
+                    >
+                      <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
+                    </button>
                   </div>
                 </div>
-                {/* Remove Photo Button */}
-                <button
-                  onClick={onPhotoRemove}
-                  className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 hover:bg-red-600 
-                             rounded-full flex items-center justify-center shadow-lg 
-                             transition-colors group z-20"
-                  title="Remove photo"
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
                 >
-                  <X className="w-4 h-4 text-white group-hover:scale-110 transition-transform" />
-                </button>
-              </div>
-            </div>
-            
-            <motion.div
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              <h3 className="text-lg font-display font-semibold text-neutral-900 mb-2">
-                Great! Photo Uploaded
-              </h3>
-              <p className="text-neutral-600 text-sm mb-4">
-                Browse the outfit catalog below and click on any outfit to see how it looks on you
-              </p>
-              
-              <motion.div
-                animate={{ y: [0, 8, 0] }}
-                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-                className="text-primary-500"
-              >
-                <ChevronLeft className="w-5 h-5 mx-auto transform rotate-90" />
-              </motion.div>
-            </motion.div>
+                  <h3 className="text-lg font-display font-semibold text-neutral-900 mb-2">
+                    Great! Photo Uploaded
+                  </h3>
+                  <p className="text-neutral-600 text-sm mb-4">
+                    Browse the outfit catalog below and click on any outfit to see how it looks on you
+                  </p>
+                  
+                  <motion.div
+                    animate={{ y: [0, 8, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="text-primary-500"
+                  >
+                    <ChevronLeft className="w-5 h-5 mx-auto transform rotate-90" />
+                  </motion.div>
+                </motion.div>
+              </>
+            ) : (
+              // Mock Mode without user photo
+              <>
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.05, 1],
+                    rotate: [0, 2, -2, 0]
+                  }}
+                  transition={{ 
+                    duration: 4,
+                    repeat: Infinity,
+                    ease: "easeInOut"
+                  }}
+                  className="w-28 h-28 bg-gradient-to-br from-secondary-100 via-accent-100 to-primary-100
+                             rounded-2xl flex items-center justify-center mx-auto mb-6 shadow-lg"
+                >
+                  <User className="w-16 h-16 text-secondary-500" />
+                </motion.div>
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                >
+                  <h3 className="text-lg font-display font-semibold text-neutral-900 mb-2">
+                    Preview Mode Active
+                  </h3>
+                  <p className="text-neutral-600 text-sm mb-4">
+                    Browse the outfit catalog below to preview different styles. No photo needed in Preview Mode!
+                  </p>
+                  
+                  <motion.div
+                    animate={{ y: [0, 8, 0] }}
+                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                    className="text-secondary-500"
+                  >
+                    <ChevronLeft className="w-5 h-5 mx-auto transform rotate-90" />
+                  </motion.div>
+                </motion.div>
+              </>
+            )}
           </motion.div>
       </div>
     );
@@ -399,13 +445,17 @@ const TryOnGallery: React.FC<TryOnGalleryProps> = ({
                 style={{ scrollSnapAlign: 'center' }}
               >
                 <div className="h-full rounded-lg overflow-hidden shadow-md border-2 border-primary-200 relative">
-                  {/* Background user photo */}
-                  {userPhoto && (
+                  {/* Background user photo or placeholder */}
+                  {userPhoto ? (
                     <img
                       src={userPhoto.imageUrl}
                       alt="Processing try-on"
                       className="w-full h-full object-cover"
                     />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-secondary-100 via-accent-100 to-primary-100 flex items-center justify-center">
+                      <User className="w-24 h-24 text-secondary-300" />
+                    </div>
                   )}
                   
                   {/* Loading overlay */}
