@@ -139,40 +139,6 @@ export async function generateTryOnImage(request: TryOnRequest): Promise<string>
   }
 }
 
-// Utility function to convert image file to Base64
-export function imageToBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    
-    reader.onload = () => {
-      const result = reader.result as string;
-      resolve(result);
-    };
-    
-    reader.onerror = () => {
-      reject(new Error('Failed to convert image to Base64'));
-    };
-    
-    reader.readAsDataURL(file);
-  });
-}
-
-// Utility function to convert image URL to Base64 (if needed)
-export async function imageUrlToBase64(url: string): Promise<string> {
-  try {
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
-    }
-    
-    const blob = await response.blob();
-    const file = new File([blob], 'image.jpg', { type: blob.type });
-    
-    return await imageToBase64(file);
-  } catch (error) {
-    throw new Error(`Failed to convert URL to Base64: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-}
 
 // Utility function to convert data URL to Base64 format expected by API
 export function convertToApiBase64Format(dataUrl: string): string {

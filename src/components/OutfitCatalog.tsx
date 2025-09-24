@@ -1,7 +1,7 @@
-import React, { useRef } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Sparkles, ShoppingBag, Tag, Users, Palette, Filter as FilterIcon } from 'lucide-react';
-import { Outfit, Filter, OutfitCategory, Gender, Size, Season } from '../types';
+import { Sparkles, ShoppingBag, Tag, Users, Palette, Filter as FilterIcon } from 'lucide-react';
+import { Outfit, Filter, OutfitCategory, Gender, Size } from '../types';
 
 interface OutfitCatalogProps {
   outfits: Outfit[];
@@ -28,18 +28,6 @@ const genderLabels: Record<Gender, string> = {
   unisex: 'Unisex'
 };
 
-const sizeLabels: Record<Size, string> = {
-  'XS': 'XS', 'S': 'S', 'M': 'M', 'L': 'L', 'XL': 'XL', 'XXL': 'XXL',
-  '28': '28', '30': '30', '32': '32', '34': '34', '36': '36', '38': '38', '40': '40', '42': '42'
-};
-
-const seasonLabels: Record<Season, string> = {
-  'spring': 'Spring',
-  'summer': 'Summer',
-  'fall': 'Fall',
-  'winter': 'Winter',
-  'all-season': 'All Season'
-};
 
 const OutfitCatalog: React.FC<OutfitCatalogProps> = ({
   outfits,
@@ -49,16 +37,6 @@ const OutfitCatalog: React.FC<OutfitCatalogProps> = ({
   onOutfitSelect,
   onFilterChange
 }) => {
-  const scrollRef = useRef<HTMLDivElement>(null);
-
-  const scrollLeft = () => {
-    scrollRef.current?.scrollBy({ left: -300, behavior: 'smooth' });
-  };
-
-  const scrollRight = () => {
-    scrollRef.current?.scrollBy({ left: 300, behavior: 'smooth' });
-  };
-
   const handleCategoryChange = (category: OutfitCategory) => {
     onFilterChange({ ...currentFilter, category });
   };
@@ -75,13 +53,6 @@ const OutfitCatalog: React.FC<OutfitCatalogProps> = ({
     onFilterChange({ ...currentFilter, color });
   };
 
-  const handleBrandChange = (brand: string | undefined) => {
-    onFilterChange({ ...currentFilter, brand });
-  };
-
-  const handleSeasonChange = (season: Season | undefined) => {
-    onFilterChange({ ...currentFilter, season });
-  };
 
   const clearAllFilters = () => {
     onFilterChange({
@@ -102,9 +73,7 @@ const OutfitCatalog: React.FC<OutfitCatalogProps> = ({
 
   // Get unique values for filter options
   const uniqueColors = [...new Set(outfits.flatMap(outfit => outfit.colors || []))].sort();
-  const uniqueBrands = [...new Set(outfits.map(outfit => outfit.brand).filter(Boolean))].sort();
-  const uniqueSizes = [...new Set(outfits.flatMap(outfit => outfit.sizes || []))];
-  const availableSeasons = [...new Set(outfits.map(outfit => outfit.season).filter(Boolean))] as Season[];
+  const uniqueSizes = [...new Set(outfits.flatMap(outfit => outfit.sizes || []))];  
 
   return (
     <div className="h-full flex flex-col">

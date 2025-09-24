@@ -2,7 +2,7 @@ import { useState, useCallback, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { Camera, Upload, ShoppingBag, Bot, Image } from 'lucide-react';
 import { AppState, Filter, TryOnResult, UserPhoto, Outfit, CartItem } from './types';
-import { mockOutfits, mockTryOnVideos, mockTryOnImages } from './data/mockData';
+import { mockOutfits, mockTryOnVideos } from './data/mockData';
 import { generateTryOnImage, SeedreamApiError, convertToApiBase64Format } from './services/seedreamApi';
 import TryOnGallery from './components/TryOnGallery';
 import OutfitCatalog from './components/OutfitCatalog';
@@ -72,31 +72,19 @@ function App() {
     }));
 
     try {
-      let tryOnImageUrl: string;
-
-      if (useMockMode) {
-        // Use mock data for testing
-        console.log('🎭 Using mock mode - generating try-on with mock images');
-        
-        // Simulate API delay for realistic testing
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Use mock try-on image or fallback to outfit image
-        tryOnImageUrl = mockTryOnImages[outfit.id] || outfit.imageUrl;
-        
-      } else {
-        // Use real AI API
-        console.log('🚀 Using real AI mode - generating try-on with SeedREAM API');
-        
-        // Convert user photo to correct Base64 format for API
-        const personImageBase64 = convertToApiBase64Format(appState.userPhoto.imageUrl);
-        
-        // Generate try-on image using SeedREAM API
-        tryOnImageUrl = await generateTryOnImage({
-          personImageBase64,
-          outfitImageUrl: outfit.imageUrl
-        });
-      }
+      // Use real AI API
+      console.log('🚀 Using real AI mode - generating try-on with SeedREAM API');
+      
+      // Convert user photo to correct Base64 format for API
+      const personImageBase64 = convertToApiBase64Format(appState.userPhoto!.imageUrl);
+      
+      // Generate try-on image using SeedREAM API
+      // Use the first thumbnailUrl as the outfit image for generation
+      const outfitImageForGeneration = outfit.thumbnailUrl[0] || outfit.imageUrl;
+      const tryOnImageUrl = await generateTryOnImage({
+        personImageBase64,
+        outfitImageUrl: outfitImageForGeneration
+      });
 
       const newTryOn: TryOnResult = {
         id: `tryon-${Date.now()}`,
