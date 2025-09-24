@@ -55,18 +55,27 @@ Check browser console to see which mode is active:
 ## 🎨 **Mock Data Details**
 
 ### **Image Sources**
-Mock try-on images are stored in `src/data/mockData.ts`:
+Mock Mode now uses the preview images from each outfit's `thumbnailUrl` array:
 
 ```typescript
-export const mockTryOnImages: Record<string, string> = {
-  'outfit-1': 'https://images.unsplash.com/photo-1556905055-8f358a7a47b2...',
-  'outfit-2': 'https://images.unsplash.com/photo-1552374196-1ab2a1c593e8...',
-  // ... more mock images
-};
+// Example: Classic Blue Jeans outfit
+{
+  id: 'outfit-1',
+  title: 'Classic Blue Jeans',
+  thumbnailUrl: [
+    'https://rukminim2.flixcart.com/image/832/832/xif0q/jean/k/l/x/...',  // Preview 1
+    'https://rukminim2.flixcart.com/image/832/832/xif0q/jean/k/e/b/...',  // Preview 2
+    'https://rukminim2.flixcart.com/image/128/128/xif0q/jean/e/y/g/...',  // Preview 3
+    '/images/jean1.png'                                                    // Preview 4
+  ],
+  // ... other outfit properties
+}
 ```
 
-### **Fallback Behavior**
-- If no mock image exists for an outfit, uses the original outfit image
+### **Preview Behavior**
+- Shows all 4 thumbnail images as separate "try-on results"
+- Each preview appears as a different angle/view of the outfit
+- First preview is automatically selected by default
 - Maintains consistent UI behavior across both modes
 - Simulates realistic loading times for UX testing
 
@@ -83,14 +92,27 @@ const [useMockMode, setUseMockMode] = useState(() => {
 ### **Generation Logic**
 ```typescript
 if (useMockMode) {
-  // Use mock data for testing
-  await new Promise(resolve => setTimeout(resolve, 1500));
-  tryOnImageUrl = mockTryOnImages[outfit.id] || outfit.imageUrl;
+  // Create preview try-on results using thumbnailUrl images
+  const previewResults: TryOnResult[] = outfit.thumbnailUrl.map((thumbnailUrl, index) => ({
+    id: `preview-${outfit.id}-${index}`,
+    outfitId: outfit.id,
+    outfit: outfit,
+    imageUrl: thumbnailUrl, // Use thumbnailUrl as preview image
+    isSelected: index === 0, // Select first preview by default
+    isProcessing: false,
+    createdAt: new Date()
+  }));
+  
+  setAppState(prev => ({
+    ...prev,
+    tryOnResults: previewResults
+  }));
+  return; // Exit early - no API call needed
 } else {
-  // Use real AI API
+  // Use real AI API for actual try-on generation
   tryOnImageUrl = await generateTryOnImage({
     personImageBase64,
-    outfitImageUrl: outfit.imageUrl
+    outfitImageUrl: outfit.thumbnailUrl[0] || outfit.imageUrl
   });
 }
 ```
